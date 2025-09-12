@@ -7,6 +7,7 @@ import com.example.QuoraApp.models.Answer;
 import com.example.QuoraApp.repositories.AnswerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -29,6 +30,15 @@ public class AnswerService implements IAnswerService {
         Mono<Answer> getAnswersById = answerRepository.findById(id);
         return getAnswersById.map(AnswerAdapter::toDto)
                 .doOnSuccess(response -> System.out.println("Answer retrieved successfully: " + response))
+                .doOnError(error -> System.out.println("Error faced : "+ error));
+    }
+
+    @Override
+    public Flux<AnswerResponseDto> getAllAnswersByQuestionId(String questionId){
+        Flux<Answer> answersByQuestionId = answerRepository.findByQuestionId(questionId);
+        return answersByQuestionId.map(AnswerAdapter::toDto)
+                .doOnNext(response -> System.out.println("Answer retrieved successfully: " + response))
+                .doOnComplete(() -> System.out.println("Answer retrieved successfully"))
                 .doOnError(error -> System.out.println("Error faced : "+ error));
     }
 }

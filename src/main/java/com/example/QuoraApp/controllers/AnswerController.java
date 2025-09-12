@@ -8,6 +8,7 @@ import com.example.QuoraApp.services.IAnswerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -31,5 +32,11 @@ public class AnswerController {
                 .doOnError(error-> System.out.println("Error found at answer: " + error));
     }
 
-
+    @GetMapping("/question/{questionId}")
+    public Flux<AnswerResponseDto> getAllAnswersByQuestionId(@PathVariable String questionId){
+       return answerService.getAllAnswersByQuestionId(questionId)
+                .doOnNext(response->System.out.println("Answer found successfully: " + response))
+                .doOnComplete(() -> System.out.println("Answer retrieved successfully"))
+                .doOnError(error -> System.out.println("Error retrieved successfully: " + error));
+    }
 }
