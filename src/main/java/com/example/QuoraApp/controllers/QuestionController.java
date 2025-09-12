@@ -49,7 +49,9 @@ public class QuestionController {
             @RequestParam(defaultValue = "0") int offset,
             @RequestParam(defaultValue = "100") int pageSize
     ){
-        return this.questionService.searchQuestions(query, offset, pageSize);
+        return this.questionService.searchQuestions(query, offset, pageSize)
+                .doOnComplete(() -> System.out.println("Search completed successfully"))
+                .doOnError(error -> System.out.println("Error searching questions: " + error));
     }
 
     @GetMapping("/cursor")
@@ -58,6 +60,8 @@ public class QuestionController {
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "10") int size
     ){
-        return questionService.searchQuestionByCursor(cursor,size);
+        return questionService.searchQuestionByCursor(cursor,size)
+                .doOnComplete(() -> System.out.println("Search completed successfully with cursor: " + cursor))
+                .doOnError(error -> System.out.println("Error searching questions: " + error));
     }
 }
