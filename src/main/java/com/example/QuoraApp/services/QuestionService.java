@@ -22,12 +22,7 @@ public class QuestionService implements IQuestionService {
 
     @Override
     public Mono<QuestionResponseDto> createQuestion(QuestionRequestDto questionRequestDto) {
-        Question question = Question.builder()
-                .title(questionRequestDto.getTitle()) // getTitle is the getter which sets the value in the setter .title , we take values from Dto and make Question.builder mei question
-                .content(questionRequestDto.getContent())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build(); //kyuki builder use krenge
+        Question question = QuestionAdapter.toEntity(questionRequestDto);
         return questionRepository.save(question)
                 .map(QuestionAdapter::toDto)
                 .doOnSuccess(response->System.out.println("Question created successfully: " + response))
