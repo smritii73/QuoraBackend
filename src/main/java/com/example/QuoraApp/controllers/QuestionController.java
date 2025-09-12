@@ -2,10 +2,9 @@ package com.example.QuoraApp.controllers;
 
 import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
-import jakarta.validation.Valid;
+import com.example.QuoraApp.services.QuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import com.example.QuoraApp.services.IQuestionService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -14,43 +13,51 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class QuestionController {
 
-    private final IQuestionService questionService;
+    private final QuestionService questionService;
 
     @PostMapping
-    public Mono<QuestionResponseDto> createQuestion(@Valid @RequestBody QuestionRequestDto questionRequestDto){
+    public Mono<QuestionResponseDto> createQuestion(@RequestBody QuestionRequestDto questionRequestDto) {
         return questionService.createQuestion(questionRequestDto)
-                .doOnSuccess(response->System.out.println("Question created successfully: " + response))
-                .doOnError(error-> System.out.println("Error creating question : " + error));
+                .doOnSuccess(response -> System.out.println("Question created successfully: " + response))
+                .doOnError(error -> System.out.println("Error creating question: " + error));
     }
 
     @GetMapping("/{id}")
-    public Mono<QuestionResponseDto> getQuestionById(@PathVariable String id){
-        return questionService.getQuestionById(id)
-                .doOnSuccess(response->System.out.println("Question retrieved successfully: " + response))
-                .doOnError(error-> System.out.println("Error faced while getting the question : " + error));
+    public Mono<QuestionResponseDto> getQuestionById(@PathVariable String id) {
+        return this.questionService.getQuestionById(id)
+                .doOnSuccess(response -> System.out.println("Question retrieved successfully: " + response))
+                .doOnError(error -> System.out.println("Error getting question: " + error));
     }
 
     @GetMapping
-    public Flux<QuestionResponseDto> getAllQuestions(){
-        return questionService.getAllQuestions()
-                .doOnNext(response->System.out.println("Question retrieved successfully: " + response))
-                .doOnComplete(()-> System.out.println("All questions retrieved successfully"))
-                .doOnError(error->System.out.println("Error faced while getting the questions : " + error));
+    public Flux<QuestionResponseDto> getAllQuestions() {
+        return this.questionService.getAllQuestions()
+                .doOnNext(response -> System.out.println("Questions retrieved successfully: " + response))
+                .doOnError(error -> System.out.println("Error getting all questions: " + error));
     }
 
     @DeleteMapping("/{id}")
-    public Mono<Void> deleteQuestionById(@PathVariable String id){
-       return questionService.deleteQuestionById(id)
-               .doOnSuccess(response->System.out.println("Question deleted successfully: " + response))
-               .doOnError(error->System.out.println("Error faced while deleting question by id: "+ error));
+    public Mono<Void> deleteQuestionById(@PathVariable String id) {
+        return this.questionService.deleteQuestionById(id)
+                .doOnSuccess(response -> System.out.println("Question deleted successfully: " + response))
+                .doOnError(error -> System.out.println("Error deleting question: " + error));
     }
 
     @GetMapping("/search")
     public Flux<QuestionResponseDto> searchQuestions(
-            @RequestParam String searchTerm,
-            @RequestParam(defaultValue = "0") int offset, //offset means page no.
-            @RequestParam(defaultValue = "100") int pageSize //pageSize means 1 pg will have how many entities
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "100") int pageSize
     ){
-        return questionService.searchQuestion(searchTerm,offset,pageSize);
+        return this.questionService.searchQuestions(query, offset, pageSize);
+    }
+
+    @GetMapping("/cursor")
+    //cursor aka ptr pointing to entity. In our case, we point to the questions created at timestamps
+    public Flux<QuestionResponseDto> searchQuestionsByCursor(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        return questionService.searchQuestionByCursor(cursor,size);
     }
 }

@@ -5,6 +5,7 @@ import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
 import com.example.QuoraApp.models.Question;
 import com.example.QuoraApp.repositories.QuestionRepository;
+import com.example.QuoraApp.utils.CursorUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -59,10 +60,38 @@ public class QuestionService implements IQuestionService {
     }
 
     @Override
-    public Flux<QuestionResponseDto> searchQuestion(String searchTerm, Integer offset, Integer pageSize){
+    public Flux<QuestionResponseDto> searchQuestions(String searchTerm, Integer offset, Integer pageSize) {
         return questionRepository.findByTitleOrContentContainingIgnoreCase(searchTerm, PageRequest.of(offset,pageSize))
                 .map(QuestionAdapter::toDto)
-                .doOnComplete(()-> System.out.println("All questions retrieved successfully"))
-                .doOnError(error->System.out.println("Error getting questions: " + error));
+                .doOnError(error -> System.out.println("Error getting questions: " + error))
+                .doOnComplete(() -> System.out.println("All questions retrieved successfully"));
+    }
+
+    @Override
+    public Flux<QuestionResponseDto> searchQuestionByCursor(String cursor, int size){
+        /*what we should check is if we again want a certain no. records then we shuld use the pageable obj
+        but we dont want the offset then we keep the offset as zero
+        If we want the size, we can use the pageable object
+        Now we have to check if we passed the cursor to us or not, as in the controller it was(required=false)
+        To check we have the cursor or not, we have the cursor util
+        Now the most imp thing is , that the ordering should be done using createdAt
+         */
+        Pageable pageable = PageRequest.of(0,size);
+        if(!CursorUtils.isValidCursor(cursor)){
+            //here we arent getting the cursor so we have to return the top 10 records
+            return questionRepository.findTop10ByOrderByCreatedAtAsc(pageable)
+                    .map(QuestionAdapter::toDto)
+                    .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
+                    .doOnError(error -> System.out.println("Error getting questions: " + error));
+        }
+        else{
+            // here we got the cursor and will return the records wrt the timestamp provided in the cursor
+            // the cursor has the timestamp
+            LocalDateTime cursorTimeStamp = CursorUtils.parseCursor(cursor);
+            return questionRepository.findByCreatedAtGreaterThanOrderByCreatedAtAsc(cursorTimeStamp, pageable)
+                    .map(QuestionAdapter::toDto)
+                    .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
+                    .doOnError(error -> System.out.println("Error getting questions: " + error));
+        }
     }
 }
