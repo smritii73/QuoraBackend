@@ -44,4 +44,13 @@ public class QuestionController {
                .doOnSuccess(response->System.out.println("Question deleted successfully: " + response))
                .doOnError(error->System.out.println("Error faced while deleting question by id: "+ error));
     }
+
+    @GetMapping("/search")
+    public Flux<QuestionResponseDto> searchQuestions(
+            @RequestParam String searchTerm,
+            @RequestParam(defaultValue = "0") int offset, //offset means page no.
+            @RequestParam(defaultValue = "100") int pageSize //pageSize means 1 pg will have how many entities
+    ){
+        return questionService.searchQuestion(searchTerm,offset,pageSize);
+    }
 }

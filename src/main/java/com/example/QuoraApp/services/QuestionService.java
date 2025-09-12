@@ -6,6 +6,8 @@ import com.example.QuoraApp.dto.QuestionResponseDto;
 import com.example.QuoraApp.models.Question;
 import com.example.QuoraApp.repositories.QuestionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -54,5 +56,13 @@ public class QuestionService implements IQuestionService {
         return deleteQuestionById
                 .doOnSuccess(response-> System.out.println("Deleted successfully: " + response))
                 .doOnError(error -> System.out.println("Error faced while deleting question by id: " + error));
+    }
+
+    @Override
+    public Flux<QuestionResponseDto> searchQuestion(String searchTerm, Integer offset, Integer pageSize){
+        return questionRepository.findByTitleOrContentContainingIgnoreCase(searchTerm, PageRequest.of(offset,pageSize))
+                .map(QuestionAdapter::toDto)
+                .doOnComplete(()-> System.out.println("All questions retrieved successfully"))
+                .doOnError(error->System.out.println("Error getting questions: " + error));
     }
 }
