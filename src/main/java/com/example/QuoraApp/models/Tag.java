@@ -26,7 +26,7 @@ public class Tag {
 
     @NotBlank(message = "Tag name is required")
     @Size(min=2,max=50, message = "The tag name should be between 2 - 50 characters")
-    @Indexed(unique=true)
+
     private String name;
 
     @Size(max=200, message = "The description should not exceed 200 characters")
