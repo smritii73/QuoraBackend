@@ -8,38 +8,37 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
-@Builder
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
-@Document(collection="questions") // this is same as @Entity in SQL but here we have mongoDB
-public class Question {
+@NoArgsConstructor
+@Builder
+@Document(collection="tags")
+public class Tag {
 
+    /* One question has many tags and one tag can have many questions */
     @Id
     private String id;
 
-    @NotBlank(message = "Title is required")
-    @Size(min = 10,max = 100, message = "Title must be between 10 and 100 characters")
-    private String title;
+    @NotBlank(message = "Tag name is required")
+    @Size(min=2,max=50, message = "The tag name should be between 2 - 50 characters")
+    @Indexed(unique=true)
+    private String name;
 
-    @NotBlank(message = "Content is required")
-    @Size(min = 10,max = 1000, message = "Content must be between 10 and 1000 characters")
-    private String content;
+    @Size(max=200, message = "The description should not exceed 200 characters")
+    private String description;
 
-    //store the tags id creates many to many relationships
-    @Indexed
-    //for querying the questions by tags
-    private List<String> tagIds;
+    @Builder.Default
+    private Integer usageCount = 0; // tracks how many questions use this tag
+    // whenerver we have to give default value, use Builder.Default
 
     @CreatedDate
     private LocalDateTime createdAt;
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
-
 }

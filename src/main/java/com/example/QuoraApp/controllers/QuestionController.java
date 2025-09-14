@@ -2,6 +2,7 @@ package com.example.QuoraApp.controllers;
 
 import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
+import com.example.QuoraApp.services.IQuestionService;
 import com.example.QuoraApp.services.QuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +14,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class QuestionController {
 
-    private final QuestionService questionService;
+    private final IQuestionService questionService;
 
     @PostMapping
     public Mono<QuestionResponseDto> createQuestion(@RequestBody QuestionRequestDto questionRequestDto) {
