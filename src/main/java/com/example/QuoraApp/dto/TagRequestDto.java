@@ -6,7 +6,7 @@ import lombok.*;
 import org.springframework.data.mongodb.core.index.Indexed;
 
 @Data
-@Getter
+@Getter // if a variable is private and we require it, we get it via getter eg .name
 @Setter
 @Builder
 @NoArgsConstructor

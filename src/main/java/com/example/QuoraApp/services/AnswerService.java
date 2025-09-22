@@ -36,7 +36,7 @@ public class AnswerService implements IAnswerService {
     @Override
     public Flux<AnswerResponseDto> getAllAnswersByQuestionId(String questionId){
         Flux<Answer> answersByQuestionId = answerRepository.findByQuestionId(questionId);
-        return answersByQuestionId.map(AnswerAdapter::toDto)
+        return answersByQuestionId.map(AnswerAdapter::toDto) // toDto is the static method reference of the AnswerAdapter class
                 .doOnNext(response -> System.out.println("Answer retrieved successfully: " + response))
                 .doOnComplete(() -> System.out.println("Answer retrieved successfully"))
                 .doOnError(error -> System.out.println("Error faced : "+ error));

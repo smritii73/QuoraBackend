@@ -7,6 +7,7 @@ import com.example.QuoraApp.services.TagService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -30,5 +31,14 @@ public class TagController {
                 .doOnError(error-> System.out.println("Error while getting tag: " + error));
     }
 
-
+    @GetMapping
+    public Flux<TagResponseDto> getAllTags(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        return tagService.getAllTags(page, size)
+                .doOnNext(response-> System.out.println("Tag get successfully: " + response))
+                .doOnError(error-> System.out.println("Error while getting tags: " + error))
+                .doOnComplete(()-> System.out.println("Tag get successfully"));
+    }
 }
