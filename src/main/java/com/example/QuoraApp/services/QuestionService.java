@@ -40,7 +40,8 @@ public class QuestionService implements IQuestionService {
     @Override
     public Flux<QuestionResponseDto> getAllQuestions(){
       Flux<Question> findAllQuestions = questionRepository.findAll();
-      return findAllQuestions.map(QuestionAdapter::toDto)
+      return findAllQuestions
+              .map(QuestionAdapter::toDto)
               .doOnNext(response->System.out.println("Question found:" + response))
               .doOnComplete(()-> System.out.println("All questions retrieved successfully"))
               .doOnError(error -> System.out.println("Error getting all questions: " + error));

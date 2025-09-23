@@ -41,4 +41,11 @@ public class TagController {
                 .doOnError(error-> System.out.println("Error while getting tags: " + error))
                 .doOnComplete(()-> System.out.println("Tag get successfully"));
     }
+
+    @GetMapping("/name/{name}")
+    public Mono<TagResponseDto> getTagByName(@PathVariable String name){
+        return tagService.findTagByName(name)
+                .doOnSuccess(response-> System.out.println("Tag get successfully: " + response))
+                .doOnError(error-> System.out.println("Error while getting tag: " + error));
+    }
 }

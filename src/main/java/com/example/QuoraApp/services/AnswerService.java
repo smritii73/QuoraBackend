@@ -28,7 +28,9 @@ public class AnswerService implements IAnswerService {
     @Override
     public Mono<AnswerResponseDto> getAnswersById(String id) {
         Mono<Answer> getAnswersById = answerRepository.findById(id);
-        return getAnswersById.map(AnswerAdapter::toDto)
+        return getAnswersById
+                .map(AnswerAdapter::toDto)
+                .switchIfEmpty(Mono.error(new RuntimeException("Answer with Id : " + id + " doesn't exists")))
                 .doOnSuccess(response -> System.out.println("Answer retrieved successfully: " + response))
                 .doOnError(error -> System.out.println("Error faced : "+ error));
     }
@@ -36,7 +38,9 @@ public class AnswerService implements IAnswerService {
     @Override
     public Flux<AnswerResponseDto> getAllAnswersByQuestionId(String questionId){
         Flux<Answer> answersByQuestionId = answerRepository.findByQuestionId(questionId);
-        return answersByQuestionId.map(AnswerAdapter::toDto) // toDto is the static method reference of the AnswerAdapter class
+        return answersByQuestionId
+                .map(AnswerAdapter::toDto) // toDto is the static method reference of the AnswerAdapter class
+                .switchIfEmpty(Flux.error(new RuntimeException("Answer with questionId : " + questionId + " doesn't exists")))
                 .doOnNext(response -> System.out.println("Answer retrieved successfully: " + response))
                 .doOnComplete(() -> System.out.println("Answer retrieved successfully"))
                 .doOnError(error -> System.out.println("Error faced : "+ error));

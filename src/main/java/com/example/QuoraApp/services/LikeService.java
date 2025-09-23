@@ -28,6 +28,7 @@ public class LikeService implements ILikeService {
     public Mono<LikeResponseDto> getLikeById(String id){
         return likeRepository.findById(id)
                 .map(LikeAdapter::toDto)
+                .switchIfEmpty(Mono.error(new RuntimeException("Like with id : " + id + " doesn't exists")))
                 .doOnSuccess(response -> System.out.println("Like get successfully: " + response))
                 .doOnError(error -> System.out.println("Like get failed: " + error));
     }
