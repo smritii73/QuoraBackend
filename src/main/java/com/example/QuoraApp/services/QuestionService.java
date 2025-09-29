@@ -4,6 +4,7 @@ import com.example.QuoraApp.adapter.QuestionAdapter;
 import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
 import com.example.QuoraApp.models.Question;
+import com.example.QuoraApp.models.TagFilterType;
 import com.example.QuoraApp.repositories.QuestionRepository;
 import com.example.QuoraApp.utils.CursorUtils;
 import lombok.RequiredArgsConstructor;
@@ -13,20 +14,31 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class QuestionService implements IQuestionService {
 
     private final QuestionRepository questionRepository;
+    private final TagService tagService;
 
     @Override
     public Mono<QuestionResponseDto> createQuestion(QuestionRequestDto questionRequestDto) {
         Question question = QuestionAdapter.toEntity(questionRequestDto);
-        return questionRepository.save(question)
-                .map(QuestionAdapter::toDto)
-                .doOnSuccess(response->System.out.println("Question created successfully: " + response))
-                .doOnError(error -> System.out.println("Error creating question: " + error));
+        return questionRepository.save(question) //this will give Mono<Question> after saving in questionRepository
+                .flatMap(savedQuestion -> {
+                    // increment usage count for all tags
+                    if(savedQuestion.getTagIds()!=null && !savedQuestion.getTagIds().isEmpty()) {
+                        return Flux.fromIterable(savedQuestion.getTagIds())
+                                .flatMap(tagService::incrementUsageCount)
+                                .then(Mono.just(savedQuestion));
+                    }
+                    return Mono.just(savedQuestion);
+                }) // we have Mono<Question >-> Mono<Mono<QuestionResponseDTO>>
+                .flatMap(this::enrichQuestionWithTags)
+                .doOnNext(response -> System.out.println("Question created Successfully" + response))
+                .doOnError(throwable -> System.out.println("Question created Failed" + throwable));
     }
 
     @Override
@@ -89,5 +101,54 @@ public class QuestionService implements IQuestionService {
                     .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
                     .doOnError(error -> System.out.println("Error getting questions: " + error));
         }
+    }
+
+    @Override
+    public Flux<QuestionResponseDto> getQuestionsByTags(List<String> tagIds, TagFilterType tagFilterType, int page, int size) {
+        if(tagIds == null || tagIds.isEmpty()) return Flux.empty();
+        Pageable pageable = PageRequest.of(page,size);
+
+        // choose the appropriate repository method on filter type
+        Flux<Question> questionsFlux = switch(tagFilterType){
+            case SINGLE -> questionRepository.findByTagId(tagIds.getFirst(), pageable);
+            case ANY -> questionRepository.findByTagIdIn(tagIds, pageable);
+            case ALL -> questionRepository.findByTagIdAll(tagIds, pageable);
+        };
+        return questionsFlux
+                .flatMap(this::enrichQuestionWithTags) // Flux<Mono<QuestionResponseDto>> -> Flux<QuestionResponseDto>
+                .doOnNext(response-> System.out.println("Question found:" + response))
+                .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
+                .doOnError(error -> System.out.println("Error getting questions: " + error));
+    }
+
+    @Override
+    public Flux<QuestionResponseDto> getQuestionsByTagId(String tagId, int page, int size) {
+        return getQuestionsByTags(List.of(tagId), TagFilterType.SINGLE, page, size);
+    }
+
+    @Override
+    public Flux<QuestionResponseDto> getQuestionsByAnyTags(List<String> tagIds, int page, int size) {
+        return getQuestionsByTags(tagIds, TagFilterType.ANY, page, size);
+    }
+
+    @Override
+    public Flux<QuestionResponseDto> getQuestionsByAllTags(List<String> tagIds, int page, int size) {
+        return getQuestionsByTags(tagIds, TagFilterType.ALL, page, size);
+    }
+
+    //As QuestionResponseDTO wants tags, but Question has only tagIds, so we have to fetch all the tag from tagIds
+    // and form QuestionResponseDTO
+    private Mono<QuestionResponseDto> enrichQuestionWithTags(Question question){
+        if(question.getTagIds()==null || question.getTagIds().isEmpty()) return Mono.just(QuestionAdapter.toDto(question));
+        // question se uski tagList laaenge using getter
+        return Flux.fromIterable(question.getTagIds()) // we have Flux<String> we took out the string
+                .flatMap(tagService::getTagById)// after giving the string i got Mono<TagResponseDto> -> Flux<Mono<TagResponseDto>> but this is wrong so we have to remove Mono and answer is just TagResponseDTO
+                .collectList()// Gathers all emitted TagResponseDTO objects and Returns Mono<List<TagResponseDTO>>
+                .map(tagList-> QuestionAdapter.toDtoWithTags(question, tagList));
+                // we take the List<TagResponseDTO> out from the Mono and then we convert using map,
+               // in which we take the Question entity (already given) and TagList,
+               // convert to the QuestionResponseDTO using the question and the tagList,
+              // mapping it as QuestionResponseDTO and then put in old Mono to get Mono<QuestionResponseDTO>
+
     }
 }

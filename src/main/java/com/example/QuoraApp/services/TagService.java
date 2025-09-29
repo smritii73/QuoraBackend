@@ -86,7 +86,7 @@ Assumes your function returns a Mono and flattens it */
             return tagRepository.save(tag); //this will return Mono<Tag>
             // Mono<Tag> > Tag > Mono<Tag> > Mono<Mono<Tag>>
             // We will get this if we use Map. Now we flatten it to remove outer Mono, thus using flatMap
-            // Now we have Mono<Tag> as outer Mono got removed.
+            // Now we have Mono<Tag> as inner Mono got removed.
         }).map(TagAdapter::toDto);
     }
     /*

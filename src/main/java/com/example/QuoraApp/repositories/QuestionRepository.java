@@ -8,6 +8,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface QuestionRepository extends ReactiveMongoRepository<Question,String> {
@@ -19,4 +20,15 @@ public interface QuestionRepository extends ReactiveMongoRepository<Question,Str
     Flux<Question> findByCreatedAtGreaterThanOrderByCreatedAtAsc(LocalDateTime cursor, Pageable pageable);
     Flux<Question> findTop10ByOrderByCreatedAtAsc(Pageable pageable); // just return the top 10 records
 
+    // find question by single tagId
+    @Query("{ 'tagIds' :  ?0}")
+    Flux<Question> findByTagId(String tagId, Pageable pageable);
+
+    // find questions by multiple tagIds (Questions that have ANY of these tags)
+    @Query("{'tagIds' :  {$in : ?0}}")
+    Flux<Question> findByTagIdIn(List<String> tagIds, Pageable pageable);
+
+    // find questions by multiple tagIds (Questions that have ALL of these tags)
+    @Query("{'tagIds' : {$all : ?0}}")
+    Flux<Question> findByTagIdAll(List<String> tagIds, Pageable pageable);
 }

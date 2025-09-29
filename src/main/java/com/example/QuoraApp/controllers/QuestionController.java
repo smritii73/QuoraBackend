@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("api/questions")
 @RequiredArgsConstructor
@@ -65,4 +67,41 @@ public class QuestionController {
                 .doOnComplete(() -> System.out.println("Search completed successfully with cursor: " + cursor))
                 .doOnError(error -> System.out.println("Error searching questions: " + error));
     }
+
+    @GetMapping("/tag/{tagId}")
+    public Flux<QuestionResponseDto> searchQuestionsByTagId(
+            @PathVariable String tagId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        return questionService.getQuestionsByTagId(tagId,page,size)
+                .doOnNext(response -> System.out.println("Questions retrieved successfully: " + response))
+                .doOnError(error -> System.out.println("Error searching questions: " + error))
+                .doOnComplete(() -> System.out.println("Search completed successfully"));
+    }
+
+    @GetMapping("/tag/any")
+    public Flux<QuestionResponseDto> searchQuestionsByAnyTags(
+            @RequestParam List<String> tagIds,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        return questionService.getQuestionsByAnyTags(tagIds,page,size)
+                .doOnNext(response -> System.out.println("Questions retrieved successfully: " + response))
+                .doOnError(error -> System.out.println("Error searching questions: " + error))
+                .doOnComplete(() -> System.out.println("Search completed successfully"));
+    }
+
+    @GetMapping("/tag/all")
+    public Flux<QuestionResponseDto> searchQuestionsByAllTags(
+            @RequestParam List<String> tagIds,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        return questionService.getQuestionsByAllTags(tagIds,page,size)
+                .doOnNext(response -> System.out.println("Questions retrieved successfully: " + response))
+                .doOnError(error -> System.out.println("Error searching questions: " + error))
+                .doOnComplete(() -> System.out.println("Search completed successfully"));
+    }
+
 }
