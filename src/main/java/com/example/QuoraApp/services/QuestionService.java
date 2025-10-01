@@ -3,8 +3,10 @@ package com.example.QuoraApp.services;
 import com.example.QuoraApp.adapter.QuestionAdapter;
 import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
+import com.example.QuoraApp.events.ViewCountEvent;
 import com.example.QuoraApp.models.Question;
 import com.example.QuoraApp.models.TagFilterType;
+import com.example.QuoraApp.producers.KafkaEventProducer;
 import com.example.QuoraApp.repositories.QuestionRepository;
 import com.example.QuoraApp.utils.CursorUtils;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ public class QuestionService implements IQuestionService {
 
     private final QuestionRepository questionRepository;
     private final TagService tagService;
+    private final KafkaEventProducer kafkaEventProducer;
 
     @Override
     public Mono<QuestionResponseDto> createQuestion(QuestionRequestDto questionRequestDto) {
@@ -45,8 +48,12 @@ public class QuestionService implements IQuestionService {
     public Mono<QuestionResponseDto> getQuestionById(String id){
         Mono<Question> findQuestion = questionRepository.findById(id);
         return findQuestion.map(QuestionAdapter::toDto)
-                .doOnSuccess(response->System.out.println("Question found:" + response))
-                .doOnError(error -> System.out.println("Error getting question by id: " + error));
+                .doOnError(error -> System.out.println("Error getting question by id: " + error))
+                .doOnSuccess(response-> {
+                    System.out.println("Question retrieved Successfully" + response);
+                    ViewCountEvent viewCountEvent = new ViewCountEvent(id, "question", LocalDateTime.now());
+                    kafkaEventProducer.publishViewCountEvent(viewCountEvent);
+                });
     }
 
     @Override
@@ -142,7 +149,8 @@ public class QuestionService implements IQuestionService {
         if(question.getTagIds()==null || question.getTagIds().isEmpty()) return Mono.just(QuestionAdapter.toDto(question));
         // question se uski tagList laaenge using getter
         return Flux.fromIterable(question.getTagIds()) // we have Flux<String> we took out the string
-                .flatMap(tagService::getTagById)// after giving the string i got Mono<TagResponseDto> -> Flux<Mono<TagResponseDto>> but this is wrong so we have to remove Mono and answer is just TagResponseDTO
+                .flatMap(tagService::getTagById)// after giving the string i got Mono<TagResponseDto> -> Flux<Mono<TagResponseDto>>
+                // but this is wrong so we have to remove Mono and answer is just TagResponseDTO
                 .collectList()// Gathers all emitted TagResponseDTO objects and Returns Mono<List<TagResponseDTO>>
                 .map(tagList-> QuestionAdapter.toDtoWithTags(question, tagList));
                 // we take the List<TagResponseDTO> out from the Mono and then we convert using map,

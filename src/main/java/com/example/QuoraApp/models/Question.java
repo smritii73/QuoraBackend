@@ -36,6 +36,9 @@ public class Question {
     //for querying the questions by tags
     private List<String> tagIds;
 
+    @Builder.Default
+    private Integer views=0;
+
     @CreatedDate
     private LocalDateTime createdAt;
 
