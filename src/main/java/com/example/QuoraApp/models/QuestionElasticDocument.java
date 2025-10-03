@@ -11,7 +11,7 @@ import org.springframework.data.annotation.Id;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(indexName = "qestions")
+@Document(indexName = "questions")
 public class QuestionElasticDocument {
 
     @Id
