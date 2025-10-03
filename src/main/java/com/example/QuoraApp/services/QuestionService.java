@@ -5,8 +5,10 @@ import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
 import com.example.QuoraApp.events.ViewCountEvent;
 import com.example.QuoraApp.models.Question;
+import com.example.QuoraApp.models.QuestionElasticDocument;
 import com.example.QuoraApp.models.TagFilterType;
 import com.example.QuoraApp.producers.KafkaEventProducer;
+import com.example.QuoraApp.repositories.QuestionDocumentRepository;
 import com.example.QuoraApp.repositories.QuestionRepository;
 import com.example.QuoraApp.utils.CursorUtils;
 import lombok.RequiredArgsConstructor;
@@ -25,12 +27,15 @@ public class QuestionService implements IQuestionService {
     private final QuestionRepository questionRepository;
     private final TagService tagService;
     private final KafkaEventProducer kafkaEventProducer;
+    private final IQuestionIndexService questionIndexService;
+    private final QuestionDocumentRepository questionDocumentRepository;
 
     @Override
     public Mono<QuestionResponseDto> createQuestion(QuestionRequestDto questionRequestDto) {
         Question question = QuestionAdapter.toEntity(questionRequestDto);
         return questionRepository.save(question) //this will give Mono<Question> after saving in questionRepository
                 .flatMap(savedQuestion -> {
+                    questionIndexService.createQuestionIndex(question); // dumping te question to elastic search
                     // increment usage count for all tags
                     if(savedQuestion.getTagIds()!=null && !savedQuestion.getTagIds().isEmpty()) {
                         return Flux.fromIterable(savedQuestion.getTagIds())
@@ -157,6 +162,10 @@ public class QuestionService implements IQuestionService {
                // in which we take the Question entity (already given) and TagList,
                // convert to the QuestionResponseDTO using the question and the tagList,
               // mapping it as QuestionResponseDTO and then put in old Mono to get Mono<QuestionResponseDTO>
+    }
 
+    @Override
+    public List<QuestionElasticDocument> searchQuestionByElasticSearch(String query){
+        return questionDocumentRepository.findByTitleContainingOrContentContaining(query, query);
     }
 }

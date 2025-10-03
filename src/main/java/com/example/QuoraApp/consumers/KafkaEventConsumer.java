@@ -31,7 +31,7 @@ public class KafkaEventConsumer {
             Integer views = question.getViews();
             question.setViews(views == null ? 0 : views + 1);
             return questionRepository.save(question);
-        }) //whatever this flatMap returns, we can subscribe on that asyncronously
+        }) // whatever this flatMap returns, we can subscribe on that asyncronously
                 .subscribe(updatedQuestion->{
                     System.out.println("View count incremented for question : " + updatedQuestion.getId());
                 },error->{
@@ -39,7 +39,7 @@ public class KafkaEventConsumer {
                 });
     }
 }
-/* we will be addign a ViewCountIncrementStrategy interface then have implementation for it
+/* we will be adding a ViewCountIncrementStrategy interface then have implementation for it
 QuestionViewCountIncrementStrategy and AnswerViewCountIncrementStrategy
 then we will make ViewCountStrategyFactory > Factory class responsible for creating instances of the strategy classes
 and our consume class will depend on one of the instances marked by the interface so that you can depend on the

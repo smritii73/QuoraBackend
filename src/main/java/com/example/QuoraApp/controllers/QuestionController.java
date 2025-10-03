@@ -2,6 +2,7 @@ package com.example.QuoraApp.controllers;
 
 import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
+import com.example.QuoraApp.models.QuestionElasticDocument;
 import com.example.QuoraApp.services.IQuestionService;
 import com.example.QuoraApp.services.QuestionService;
 import lombok.RequiredArgsConstructor;
@@ -102,6 +103,13 @@ public class QuestionController {
                 .doOnNext(response -> System.out.println("Questions retrieved successfully: " + response))
                 .doOnError(error -> System.out.println("Error searching questions: " + error))
                 .doOnComplete(() -> System.out.println("Search completed successfully"));
+    }
+
+    @GetMapping("/elasticsearch")
+    public List<QuestionElasticDocument> searchQuestionByElasticSearch(
+            @RequestParam String query
+    ){
+        return questionService.searchQuestionByElasticSearch(query);
     }
 
 }
