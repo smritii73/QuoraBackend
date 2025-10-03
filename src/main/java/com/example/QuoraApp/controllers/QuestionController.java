@@ -106,10 +106,13 @@ public class QuestionController {
     }
 
     @GetMapping("/elasticsearch")
-    public List<QuestionElasticDocument> searchQuestionByElasticSearch(
+    public Flux<QuestionElasticDocument> searchQuestionByElasticSearch(
             @RequestParam String query
     ){
-        return questionService.searchQuestionByElasticSearch(query);
+        return questionService.searchQuestionByElasticSearch(query)
+                .doOnNext(response-> System.out.println("Question found: " + response))
+                .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
+                .doOnError(error -> System.out.println("Error getting questions: " + error));
     }
 
 }

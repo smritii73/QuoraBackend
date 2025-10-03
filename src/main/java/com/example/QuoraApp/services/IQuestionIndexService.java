@@ -1,7 +1,8 @@
 package com.example.QuoraApp.services;
 
 import com.example.QuoraApp.models.Question;
+import reactor.core.publisher.Mono;
 
 public interface IQuestionIndexService {
-    void createQuestionIndex(Question question);
+    Mono<Void> createQuestionIndex(Question question);
 }

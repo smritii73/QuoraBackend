@@ -35,14 +35,16 @@ public class QuestionService implements IQuestionService {
         Question question = QuestionAdapter.toEntity(questionRequestDto);
         return questionRepository.save(question) //this will give Mono<Question> after saving in questionRepository
                 .flatMap(savedQuestion -> {
-                    questionIndexService.createQuestionIndex(question); // dumping te question to elastic search
-                    // increment usage count for all tags
-                    if(savedQuestion.getTagIds()!=null && !savedQuestion.getTagIds().isEmpty()) {
-                        return Flux.fromIterable(savedQuestion.getTagIds())
-                                .flatMap(tagService::incrementUsageCount)
-                                .then(Mono.just(savedQuestion));
-                    }
-                    return Mono.just(savedQuestion);
+                    return questionIndexService.createQuestionIndex(savedQuestion)
+                            .then(Mono.defer(() -> {
+                                // increment usage count for all tags
+                                if(savedQuestion.getTagIds()!=null && !savedQuestion.getTagIds().isEmpty()) {
+                                    return Flux.fromIterable(savedQuestion.getTagIds())
+                                            .flatMap(tagService::incrementUsageCount)
+                                            .then(Mono.just(savedQuestion));
+                                }
+                                return Mono.just(savedQuestion);
+                            }));
                 }) // we have Mono<Question >-> Mono<Mono<QuestionResponseDTO>>
                 .flatMap(this::enrichQuestionWithTags)
                 .doOnNext(response -> System.out.println("Question created Successfully" + response))
@@ -165,7 +167,10 @@ public class QuestionService implements IQuestionService {
     }
 
     @Override
-    public List<QuestionElasticDocument> searchQuestionByElasticSearch(String query){
-        return questionDocumentRepository.findByTitleContainingOrContentContaining(query, query);
+    public Flux<QuestionElasticDocument> searchQuestionByElasticSearch(String query){
+        return questionDocumentRepository.findByTitleContainingOrContentContaining(query, query)
+                .doOnNext(response-> System.out.println("Question found: " + response))
+                .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
+                .doOnError(error -> System.out.println("Error getting questions: " + error));
     }
 }
