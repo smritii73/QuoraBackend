@@ -1,32 +1,36 @@
 package com.example.QuoraApp.models;
 
-import co.elastic.clients.elasticsearch._types.GeoLocation;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
 @Data
-@Getter
-@Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
+@Document(collection = "comments")
 public class Comment {
 
     @Id
     private String id;
 
-    @NotBlank
-    @Size(min = 2 , max = 500, message = "The comment should be from 2 to 500 characters long")
+    @NotBlank(message="The text is required")
+    @Size(min = 2, max = 500, message = "The comment should be from 2 to 500 characters.")
     private String text;
 
-    @NotBlank(message = "The targetId is required") //notblank for string
+    @NotBlank(message = "The targetId is required")
     private String targetId;
+
+    @NotNull(message = "Target type is required")
+    private TargetType targetType;
 
     @CreatedDate
     @Indexed
@@ -34,5 +38,4 @@ public class Comment {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
-
 }

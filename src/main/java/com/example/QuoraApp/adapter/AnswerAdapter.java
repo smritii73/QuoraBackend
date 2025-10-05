@@ -4,7 +4,6 @@ import com.example.QuoraApp.dto.AnswerRequestDto;
 import com.example.QuoraApp.dto.AnswerResponseDto;
 import com.example.QuoraApp.models.Answer;
 
-import java.time.LocalDateTime;
 
 public class AnswerAdapter {
 
@@ -21,8 +20,6 @@ public class AnswerAdapter {
         return Answer.builder()
                 .content(answerRequestDto.getContent())
                 .questionId(answerRequestDto.getQuestionId())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
     }
 }

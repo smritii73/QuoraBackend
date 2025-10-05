@@ -5,7 +5,6 @@ import com.example.QuoraApp.dto.CommentRequestDto;
 import com.example.QuoraApp.dto.CommentResponseDto;
 import com.example.QuoraApp.models.Comment;
 
-import java.time.LocalDateTime;
 
 public class CommentAdapter {
 
@@ -14,6 +13,7 @@ public class CommentAdapter {
                 .id(comment.getId())
                 .text(comment.getText())
                 .targetId(comment.getTargetId())
+                .targetType(comment.getTargetType())
                 .createdAt(comment.getCreatedAt())
                 .build();
     }
@@ -22,8 +22,7 @@ public class CommentAdapter {
         return Comment.builder()
                 .text(commentRequestDto.getText())
                 .targetId(commentRequestDto.getTargetId())
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .targetType(commentRequestDto.getTargetType())
                 .build();
     }
 }

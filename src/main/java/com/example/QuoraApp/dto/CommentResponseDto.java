@@ -1,6 +1,6 @@
 package com.example.QuoraApp.dto;
 
-import com.example.QuoraApp.models.LikeType;
+import com.example.QuoraApp.models.TargetType;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -15,5 +15,6 @@ public class CommentResponseDto {
     private String id;
     private String text;
     private String targetId;
+    private TargetType targetType;
     private LocalDateTime createdAt;
 }
