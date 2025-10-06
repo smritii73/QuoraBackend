@@ -42,4 +42,20 @@ public class FollowController {
                 .doOnError(error-> System.err.println("Error while getting all follows: " + error))
                 .doOnComplete(()->System.out.println("All follows retrieved sucessfully"));
     }
+
+    @GetMapping("/{id}/followers")
+    public Flux<FollowResponseDto> getAllFollowersOfUserId(@PathVariable String id){
+        return followService.getAllFollowersOfUserId(id)
+                .doOnNext(response-> System.out.println("Followers retrieved sucessfully"))
+                .doOnError(error -> System.err.println("Error while getting all followers: " + error))
+                .doOnComplete(()->System.out.println("All followers retrieved sucessfully"));
+    }
+
+    @GetMapping("/{id}/following")
+    public Flux<FollowResponseDto> getAllFollowingOfUserId(@PathVariable String id){
+        return followService.getAllFollowingsOfUserId(id)
+                .doOnNext(response-> System.out.println("Followings retrieved sucessfully"))
+                .doOnError(error -> System.err.println("Error while getting all followings: " + error))
+                .doOnComplete(()->System.out.println("All followings retrieved sucessfully"));
+    }
 }

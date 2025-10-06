@@ -52,4 +52,20 @@ public class FollowService implements IFollowService{
                 .doOnComplete(()->System.out.println("All follow got successfully"))
                 .doOnError(error->System.out.println("Error while follow retrieval : " + error));
     }
+
+    @Override
+    public Flux<FollowResponseDto> getAllFollowersOfUserId(String userId){
+        return followRepository.findByFollowingId(userId)
+                .doOnNext(response-> System.out.println("Followers retrieved sucessfully"))
+                .doOnError(error -> System.out.println("Error while followers retrieval : " + error))
+                .doOnComplete(()->System.out.println("All followers got successfully"));
+    }
+
+    @Override
+    public Flux<FollowResponseDto> getAllFollowingsOfUserId(String userId){
+        return followRepository.findByFollowerId(userId)
+                .doOnNext(response-> System.out.println("Following retrieved sucessfully"))
+                .doOnError(error-> System.out.println("Error while followings retrieval : " + error))
+                .doOnComplete(() -> System.out.println("All the following retrieved successfully"));
+    }
 }
