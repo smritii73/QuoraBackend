@@ -16,5 +16,7 @@ public class UserResponseDto {
     private String username;
     private String email;
     private String bio;
+    private Integer followingCount;
+    private Integer followerCount;
     private LocalDateTime createdAt;
 }

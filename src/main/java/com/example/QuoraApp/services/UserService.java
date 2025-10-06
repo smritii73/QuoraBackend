@@ -41,4 +41,30 @@ public class UserService implements IUserService {
                 .doOnError(error -> System.out.println("User fetch failed : " + error.getMessage()))
                 .doOnComplete(() -> System.out.println("The user has been get successfully"));
     }
+
+
+    public Mono<UserResponseDto> incrementFollowerCount(String id){
+        return userRepository.findById(id)//to increment user's following count, first we need to find the user using id
+                .flatMap(user -> {
+                   user.setFollowerCount(user.getFollowerCount()+1);
+                   return userRepository.save(user);
+                   // instead of Mono<Mono<User>> we discard inner Mono using flatMap so we get Mono<User>
+                })
+                .map(UserAdapter::toDto)
+                .doOnSuccess(response->System.out.println("User follower increment successfully : " + response))
+                .doOnError(error -> System.out.println("User follower increment failed : " + error.getMessage()));
+    }
+
+
+    public Mono<UserResponseDto> incrementFollowingCount(String id){
+        return userRepository.findById(id)
+            .flatMap(user-> {
+                user.setFollowingCount(user.getFollowingCount()+1);
+                return userRepository.save(user);
+            })
+        .map(UserAdapter::toDto)
+        .doOnSuccess(response->System.out.println("User following incremented sucessfully : " + response))
+        .doOnError(error->System.out.println("User following increment failed : " + error));
+    }
+
 }

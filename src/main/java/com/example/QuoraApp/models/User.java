@@ -29,11 +29,18 @@ public class User {
     private String username;
 
     @NotBlank(message = "Email is required")
+    @Indexed(unique = true)
     @Email(message = "Email should be valid")
     private String email;
 
     @Size(max = 500, message = "The Bio should not exceed 500 characters")
     private String bio;
+
+    @Builder.Default
+    private Integer followerCount = 0;
+
+    @Builder.Default
+    private Integer followingCount = 0;
 
     @CreatedDate
     @Indexed
