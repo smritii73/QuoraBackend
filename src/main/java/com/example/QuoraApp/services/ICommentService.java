@@ -6,7 +6,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface ICommentService {
-    Mono<CommentResponseDto> createComment(CommentRequestDto commentRequestDto);
-    Mono<CommentResponseDto> getCommentById(String id);
-    Flux<CommentResponseDto> getAllComments(int page, int size);
+    public Mono<CommentResponseDto> createComment(CommentRequestDto commentRequestDto);
+    public Mono<CommentResponseDto> getCommentById(String id);
+    public Flux<CommentResponseDto> getAllComments(int page, int size);
 }

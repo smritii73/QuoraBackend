@@ -18,6 +18,7 @@ public class UserService implements IUserService {
 
     private final UserRepository userRepository;
 
+    @Override
     public Mono<UserResponseDto> createUser(UserRequestDto userRequestDto) {
         User user = UserAdapter.toEntity(userRequestDto);
         return userRepository.save(user)
@@ -26,6 +27,7 @@ public class UserService implements IUserService {
                 .doOnError(error -> System.out.println("User creation failed : " + error.getMessage()));
     }
 
+    @Override
     public Mono<UserResponseDto> getUserById(String id){
         return userRepository.findById(id)
                 .map(UserAdapter::toDto)
@@ -33,6 +35,7 @@ public class UserService implements IUserService {
                 .doOnError(error -> System.out.println("User get failed : " + error.getMessage()));
     }
 
+    @Override
     public Flux<UserResponseDto> getAllUsers(int page, int size){
         Pageable pageable = PageRequest.of(page, size);
         return userRepository.findAllBy(pageable)
@@ -42,7 +45,7 @@ public class UserService implements IUserService {
                 .doOnComplete(() -> System.out.println("The user has been get successfully"));
     }
 
-
+    @Override
     public Mono<UserResponseDto> incrementFollowerCount(String id){
         return userRepository.findById(id)//to increment user's following count, first we need to find the user using id
                 .flatMap(user -> {
@@ -56,6 +59,7 @@ public class UserService implements IUserService {
     }
 
 
+    @Override
     public Mono<UserResponseDto> incrementFollowingCount(String id){
         return userRepository.findById(id)
             .flatMap(user-> {

@@ -21,6 +21,7 @@ public class FollowService implements IFollowService{
     private final FollowRepository followRepository;
     private final UserService userService;
 
+    @Override
     public Mono<FollowResponseDto> createFollow(FollowRequestDto followRequestDto){
         Follow follow = FollowAdapter.toEntity(followRequestDto);
         return followRepository.save(follow)
@@ -35,6 +36,7 @@ public class FollowService implements IFollowService{
                 .doOnSuccess(response -> System.out.println("Follow created sucessfully" + response));
     }
 
+    @Override
     public Mono<FollowResponseDto> getFollowById(String id){
         return followRepository.findById(id)
                 .map(FollowAdapter::toDto)
@@ -42,6 +44,7 @@ public class FollowService implements IFollowService{
                 .doOnSuccess(response -> System.out.println("Follow retrieved sucessfully" + response));
     }
 
+    @Override
     public Flux<FollowResponseDto> getAllFollows(int page, int size){
         Pageable pageable = PageRequest.of(page, size);
         return followRepository.findAllBy(pageable)
