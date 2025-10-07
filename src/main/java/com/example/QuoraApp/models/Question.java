@@ -39,6 +39,9 @@ public class Question {
     @Builder.Default
     private Integer views=0;
 
+    @NotBlank(message="CreatedBy is required.")
+    private String createdById;
+
     @CreatedDate
     private LocalDateTime createdAt;
 

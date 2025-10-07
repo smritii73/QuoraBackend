@@ -3,6 +3,8 @@ package com.example.QuoraApp.services;
 import com.example.QuoraApp.adapter.QuestionAdapter;
 import com.example.QuoraApp.dto.QuestionRequestDto;
 import com.example.QuoraApp.dto.QuestionResponseDto;
+import com.example.QuoraApp.dto.TagResponseDto;
+import com.example.QuoraApp.dto.UserResponseDto;
 import com.example.QuoraApp.events.ViewCountEvent;
 import com.example.QuoraApp.models.Question;
 import com.example.QuoraApp.models.QuestionElasticDocument;
@@ -29,13 +31,19 @@ public class QuestionService implements IQuestionService {
     private final KafkaEventProducer kafkaEventProducer;
     private final IQuestionIndexService questionIndexService;
     private final QuestionDocumentRepository questionDocumentRepository;
+    private final UserService userService;
 
     @Override
     public Mono<QuestionResponseDto> createQuestion(QuestionRequestDto questionRequestDto) {
-        Question question = QuestionAdapter.toEntity(questionRequestDto);
-        return questionRepository.save(question) //this will give Mono<Question> after saving in questionRepository
+        return userService.getUserById(questionRequestDto.getCreatedById())
+                .switchIfEmpty(Mono.error(new RuntimeException("User not found")))
+                .flatMap(user->{
+                    Question question = QuestionAdapter.toEntity(questionRequestDto);
+                    return questionRepository.save(question); //this will give Mono<Question> after saving in questionRepository
+                })
                 .flatMap(savedQuestion -> {
                     return questionIndexService.createQuestionIndex(savedQuestion)
+                            // ye wala question ham elastic search mei save karre hai
                             .then(Mono.defer(() -> {
                                 // increment usage count for all tags
                                 if(savedQuestion.getTagIds()!=null && !savedQuestion.getTagIds().isEmpty()) {
@@ -46,15 +54,15 @@ public class QuestionService implements IQuestionService {
                                 return Mono.just(savedQuestion);
                             }));
                 }) // we have Mono<Question >-> Mono<Mono<QuestionResponseDTO>>
-                .flatMap(this::enrichQuestionWithTags)
+                .flatMap(this::enrichQuestionWithTagsAndUser)
                 .doOnNext(response -> System.out.println("Question created Successfully" + response))
                 .doOnError(throwable -> System.out.println("Question created Failed" + throwable));
     }
 
     @Override
     public Mono<QuestionResponseDto> getQuestionById(String id){
-        Mono<Question> findQuestion = questionRepository.findById(id);
-        return findQuestion.map(QuestionAdapter::toDto)
+        return questionRepository.findById(id)
+                .flatMap(this::enrichQuestionWithTagsAndUser)
                 .doOnError(error -> System.out.println("Error getting question by id: " + error))
                 .doOnSuccess(response-> {
                     System.out.println("Question retrieved Successfully" + response);
@@ -67,7 +75,7 @@ public class QuestionService implements IQuestionService {
     public Flux<QuestionResponseDto> getAllQuestions(){
       Flux<Question> findAllQuestions = questionRepository.findAll();
       return findAllQuestions
-              .map(QuestionAdapter::toDto)
+              .flatMap(this::enrichQuestionWithUser)
               .doOnNext(response->System.out.println("Question found:" + response))
               .doOnComplete(()-> System.out.println("All questions retrieved successfully"))
               .doOnError(error -> System.out.println("Error getting all questions: " + error));
@@ -84,7 +92,7 @@ public class QuestionService implements IQuestionService {
     @Override
     public Flux<QuestionResponseDto> searchQuestions(String searchTerm, Integer offset, Integer pageSize) {
         return questionRepository.findByTitleOrContentContainingIgnoreCase(searchTerm, PageRequest.of(offset,pageSize))
-                .map(QuestionAdapter::toDto)
+                .flatMap(this::enrichQuestionWithTagsAndUser)
                 .doOnError(error -> System.out.println("Error getting questions: " + error))
                 .doOnComplete(() -> System.out.println("All questions retrieved successfully"));
     }
@@ -102,7 +110,7 @@ public class QuestionService implements IQuestionService {
         if(!CursorUtils.isValidCursor(cursor)){
             //here we arent getting the cursor so we have to return the top 10 records
             return questionRepository.findTop10ByOrderByCreatedAtAsc(pageable)
-                    .map(QuestionAdapter::toDto)
+                    .flatMap(this::enrichQuestionWithUser)
                     .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
                     .doOnError(error -> System.out.println("Error getting questions: " + error));
         }
@@ -111,7 +119,7 @@ public class QuestionService implements IQuestionService {
             // the cursor has the timestamp
             LocalDateTime cursorTimeStamp = CursorUtils.parseCursor(cursor);
             return questionRepository.findByCreatedAtGreaterThanOrderByCreatedAtAsc(cursorTimeStamp, pageable)
-                    .map(QuestionAdapter::toDto)
+                    .flatMap(this::enrichQuestionWithUser)
                     .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
                     .doOnError(error -> System.out.println("Error getting questions: " + error));
         }
@@ -129,11 +137,54 @@ public class QuestionService implements IQuestionService {
             case ALL -> questionRepository.findByTagIdAll(tagIds, pageable);
         };
         return questionsFlux
-                .flatMap(this::enrichQuestionWithTags) // Flux<Mono<QuestionResponseDto>> -> Flux<QuestionResponseDto>
+                .flatMap(this::enrichQuestionWithTagsAndUser) // Flux<Mono<QuestionResponseDto>> -> Flux<QuestionResponseDto>
                 .doOnNext(response-> System.out.println("Question found:" + response))
                 .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
                 .doOnError(error -> System.out.println("Error getting questions: " + error));
     }
+
+    // Full enrichment - user and tags
+    private Mono<QuestionResponseDto> enrichQuestionWithTagsAndUser(Question question) {
+        if(question.getCreatedById() == null || question.getCreatedById().isEmpty()) {
+            return Mono.just(QuestionAdapter.toDto(question));
+        }
+
+        Mono<UserResponseDto> userMono = userService.getUserById(question.getCreatedById())
+                .defaultIfEmpty(UserResponseDto.builder().build());  // Fallback
+
+        if(question.getTagIds() == null || question.getTagIds().isEmpty()) {
+            return userMono.map(user -> QuestionAdapter.toDto(question, user));
+        }
+        // as we dont have tags, we convert Mono<UserResponseDto> to Mono<QuestionResponseDto>
+
+        Mono<List<TagResponseDto>> tagsMono = Flux.fromIterable(question.getTagIds())
+                // fromIterable converts a list of tags to flux and then traverse one by one on it.
+                .flatMap(tagService::getTagById)
+                // we get Flux<Mono<TagResponseDto>> then from flatmap we get Flux<TagResponseDto>
+                .collectList();
+                // converts the flux to mono<list<TagResponseDto>>
+
+        // we have to subscribe the 2 recipes and start cooking
+        return Mono.zip(userMono, tagsMono)
+                // the result will be stored in 1 variable which we will name as tuple ,
+                // Mono<Tuple> then convert to Mono<QuestionResponseDto>
+                .map(tuple -> QuestionAdapter.toDtoWithTagsAndUser(
+                        question,
+                        tuple.getT2(),  // tags detail
+                        tuple.getT1()   // user detail
+                ));
+    }
+
+    public Mono<QuestionResponseDto> enrichQuestionWithUser(Question question){
+        if(question.getCreatedById()==null || question.getCreatedById().isEmpty()){
+            return Mono.just(QuestionAdapter.toDto(question));
+        }
+
+        return userService.getUserById(question.getCreatedById())
+                .map(user-> QuestionAdapter.toDto(question,user))
+                .defaultIfEmpty(QuestionAdapter.toDto(question));
+    }
+
 
     @Override
     public Flux<QuestionResponseDto> getQuestionsByTagId(String tagId, int page, int size) {
@@ -151,7 +202,7 @@ public class QuestionService implements IQuestionService {
     }
 
     //As QuestionResponseDTO wants tags, but Question has only tagIds, so we have to fetch all the tag from tagIds
-    // and form QuestionResponseDTO
+    // and form and put in QuestionResponseDTO
     private Mono<QuestionResponseDto> enrichQuestionWithTags(Question question){
         if(question.getTagIds()==null || question.getTagIds().isEmpty()) return Mono.just(QuestionAdapter.toDto(question));
         // question se uski tagList laaenge using getter

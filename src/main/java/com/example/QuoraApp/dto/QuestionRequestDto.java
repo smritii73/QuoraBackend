@@ -26,4 +26,7 @@ public class QuestionRequestDto {
     // tagsIds to associate with the question
     private List<String> tagIds;
 
+    @NotBlank(message="CreatedById is required.")
+    private String createdById;
+
 }

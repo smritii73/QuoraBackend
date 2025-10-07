@@ -1,7 +1,6 @@
 package com.example.QuoraApp.dto;
 
 import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,5 +16,6 @@ public class QuestionResponseDto {
     private String content;
     private List<String> tagIds;
     private List<TagResponseDto> tags;
+    private UserResponseDto createdByUser;
     private LocalDateTime createdAt;
 }
