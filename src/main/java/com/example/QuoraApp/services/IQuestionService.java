@@ -20,4 +20,5 @@ public interface IQuestionService {
     public Flux<QuestionResponseDto> getQuestionsByAnyTags(List<String> tagIds, int page, int size);
     public Flux<QuestionResponseDto> getQuestionsByAllTags(List<String> tagIds, int page, int size);
     public Flux<QuestionElasticDocument> searchQuestionByElasticSearch(String query);
+    public Mono<Void> syncElasticSearchData();
 }

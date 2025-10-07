@@ -26,6 +26,7 @@ public class QuestionAdapter {
                 // we take values from Dto and make Question.builder mei question
                 .content(questionRequestDto.getContent())
                 .tagIds(questionRequestDto.getTagIds())
+                .createdById(questionRequestDto.getCreatedById())
                 .build(); //kyuki builder use krenge
     }
 

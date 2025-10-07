@@ -224,4 +224,15 @@ public class QuestionService implements IQuestionService {
                 .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
                 .doOnError(error -> System.out.println("Error getting questions: " + error));
     }
+
+    @Override
+    public Mono<Void> syncElasticSearchData(){
+        return questionDocumentRepository.deleteAll()
+                .thenMany(questionRepository.findAll())
+                .flatMap(questionIndexService::createQuestionIndex)
+                .then()
+                .doOnSuccess(response-> System.out.println("Question index synced successfully"))
+                .doOnError(error->System.err.println("Error while syncing indexes : " + error.getMessage()));
+
+    }
 }

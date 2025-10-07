@@ -115,4 +115,10 @@ public class QuestionController {
                 .doOnError(error -> System.out.println("Error getting questions: " + error));
     }
 
+    @GetMapping("/sync-elasticsearch")
+    public Mono<String> syncElasticSearch(){
+        return questionService.syncElasticSearchData()
+                .then(Mono.just("Elastic search synced successfully"))
+                .onErrorResume(error-> Mono.just("Sync failed : " + error.getMessage()));
+    }
 }
