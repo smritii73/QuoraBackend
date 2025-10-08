@@ -39,24 +39,30 @@ public class QuestionService implements IQuestionService {
                 .switchIfEmpty(Mono.error(new RuntimeException("User not found")))
                 .flatMap(user->{
                     Question question = QuestionAdapter.toEntity(questionRequestDto);
-                    return questionRepository.save(question); //this will give Mono<Question> after saving in questionRepository
-                })
-                .flatMap(savedQuestion -> {
-                    return questionIndexService.createQuestionIndex(savedQuestion)
-                            // ye wala question ham elastic search mei save karre hai
-                            .then(Mono.defer(() -> {
-                                // increment usage count for all tags
-                                if(savedQuestion.getTagIds()!=null && !savedQuestion.getTagIds().isEmpty()) {
-                                    return Flux.fromIterable(savedQuestion.getTagIds())
-                                            .flatMap(tagService::incrementUsageCount)
-                                            .then(Mono.just(savedQuestion));
+                    return questionRepository.save(question) //this will give Mono<Question> after saving in questionRepository
+                            .flatMap(savedQuestion-> {
+                                if(savedQuestion.getTagIds()== null || savedQuestion.getTagIds().isEmpty()){
+                                    return questionIndexService.createQuestionIndex(savedQuestion)
+                                            .thenReturn(QuestionAdapter.toDto(savedQuestion,user));
                                 }
-                                return Mono.just(savedQuestion);
-                            }));
-                }) // we have Mono<Question >-> Mono<Mono<QuestionResponseDTO>>
-                .flatMap(this::enrichQuestionWithTagsAndUser)
-                .doOnNext(response -> System.out.println("Question created Successfully" + response))
-                .doOnError(throwable -> System.out.println("Question created Failed" + throwable));
+
+                                Mono<Void> indexMono = questionIndexService.createQuestionIndex(savedQuestion); // save in elastic search
+                                Mono<List<TagResponseDto>> tagsMono = tagService.findTagsByIds(savedQuestion.getTagIds()); //get Mono<List<>> of tags
+                                Mono<Void> incrementMono = Flux.fromIterable(savedQuestion.getTagIds())
+                                        .flatMap(tagService::incrementUsageCount)
+                                        .then();
+                                return Mono.zip(indexMono.then(Mono.just(1)), tagsMono, incrementMono.then(Mono.just(1)))
+                                        .map(tuple-> QuestionAdapter.toDtoWithTagsAndUser(
+                                                savedQuestion,
+                                                tuple.getT2(),
+                                                user
+                                        ));
+
+                            });
+                })
+                .doOnSuccess(response -> System.out.println("Question created: " + response.getId()))
+                .doOnError(error -> System.err.println("Question creation failed: " + error.getMessage()));
+
     }
 
     @Override
@@ -73,8 +79,7 @@ public class QuestionService implements IQuestionService {
 
     @Override
     public Flux<QuestionResponseDto> getAllQuestions(){
-      Flux<Question> findAllQuestions = questionRepository.findAll();
-      return findAllQuestions
+      return questionRepository.findAll()
               .flatMap(this::enrichQuestionWithUser)
               .doOnNext(response->System.out.println("Question found:" + response))
               .doOnComplete(()-> System.out.println("All questions retrieved successfully"))
@@ -83,8 +88,18 @@ public class QuestionService implements IQuestionService {
 
     @Override
     public Mono<Void> deleteQuestionById(String id){
-        Mono<Void> deleteQuestionById = questionRepository.deleteById(id);
-        return deleteQuestionById
+        return this.questionRepository.findById(id)
+                .flatMap(question-> questionDocumentRepository
+                        .deleteById(question.getId())
+                        .thenReturn(question))
+                .flatMap(foundQuestion -> {
+                    if(foundQuestion.getTagIds()== null || foundQuestion.getTagIds().isEmpty()){
+                        return questionRepository.deleteById(id);
+                    }
+                    return Flux.fromIterable(foundQuestion.getTagIds())
+                            .flatMap(tagService::decrementUsageCount)
+                            .then(this.questionRepository.deleteById(id));
+                })
                 .doOnSuccess(response-> System.out.println("Deleted successfully: " + response))
                 .doOnError(error -> System.out.println("Error faced while deleting question by id: " + error));
     }

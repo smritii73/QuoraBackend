@@ -15,6 +15,7 @@ import reactor.core.publisher.Mono;
 public class AnswerService implements IAnswerService {
 
     private final AnswerRepository answerRepository;
+    private final IUserService userService;
 
     @Override
     public Mono<AnswerResponseDto> createAnswer(AnswerRequestDto answerRequestDto) {

@@ -9,6 +9,7 @@ public class QuestionElasticDocumentAdapter {
                 .id(question.getId())
                 .title(question.getTitle())
                 .content(question.getContent())
+                .createdById(question.getCreatedById())
                 .build();
     }
 

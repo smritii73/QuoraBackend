@@ -18,4 +18,5 @@ public class QuestionElasticDocument {
     private String id;
     private String title;
     private String content;
+    private String createdById;
 }

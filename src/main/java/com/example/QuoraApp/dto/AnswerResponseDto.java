@@ -14,5 +14,6 @@ public class AnswerResponseDto {
     private String id;
     private String content;
     private String questionId;
+    private UserResponseDto createdByUser;
     private LocalDateTime createdAt;
 }

@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Flux;
 
 @RestController
-@RequestMapping("/follow")
+@RequestMapping("api/follow")
 @RequiredArgsConstructor
 public class FollowController {
 

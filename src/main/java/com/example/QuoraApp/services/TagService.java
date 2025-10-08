@@ -13,6 +13,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class TagService implements ITagService {
@@ -122,6 +124,17 @@ Assumes your function returns a Mono and flattens it */
                 .switchIfEmpty(Mono.error(new RuntimeException("Tag with name : " + name + " doesn't exists")))
                 .doOnSuccess(response-> System.out.println("Tag get successfully : " + response))
                 .doOnError(error -> System.out.println("Error faced : " + error));
+    }
+
+    @Override
+    public Mono<List<TagResponseDto>> findTagsByIds(List<String> ids){
+        if(ids==null || ids.isEmpty()) return Mono.just(List.of());
+        return tagRepository.findAllById(ids)
+                .map(TagAdapter::toDto)
+                .collectList()
+                .doOnSuccess(tags -> System.out.println("✅ Fetched " + tags.size() + " tags in batch"))
+                .doOnError(error -> System.err.println("❌ Error fetching tags: " + error.getMessage()));
+                //to convert Flux-> Mono<List<>>, we use collectList
     }
 
 }

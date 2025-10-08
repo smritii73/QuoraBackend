@@ -20,6 +20,7 @@ public class AnswerAdapter {
         return Answer.builder()
                 .content(answerRequestDto.getContent())
                 .questionId(answerRequestDto.getQuestionId())
+                .createdById(answerRequestDto.getCreatedById())
                 .build();
     }
 }

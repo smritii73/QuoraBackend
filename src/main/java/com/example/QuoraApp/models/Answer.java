@@ -35,6 +35,9 @@ public class Answer {
     @Indexed
     private String questionId;
 
+    @NotBlank(message = "CreatedBy is required")
+    private String createdById;
+
     @CreatedDate
     @Indexed
     private LocalDateTime createdAt;
