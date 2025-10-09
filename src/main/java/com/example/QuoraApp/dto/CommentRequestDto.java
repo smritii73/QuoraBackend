@@ -24,4 +24,7 @@ public class CommentRequestDto {
     @NotNull(message = "Target type is required")
     private TargetType targetType;
 
+    @NotBlank(message = "The createdById is required")
+    private String createdById;
+
 }

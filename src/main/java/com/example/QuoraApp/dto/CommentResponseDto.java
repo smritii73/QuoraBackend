@@ -16,5 +16,6 @@ public class CommentResponseDto {
     private String text;
     private String targetId;
     private TargetType targetType;
+    private UserResponseDto createdByUser;
     private LocalDateTime createdAt;
 }

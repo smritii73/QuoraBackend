@@ -21,5 +21,6 @@ public class LikeResponseDto {
     private String targetId;
     private LikeType likeType;
     private Boolean isLike; //denotes whether liked or disliked
+    private UserResponseDto createdByUser;
     private LocalDateTime createdAt;
 }

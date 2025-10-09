@@ -14,12 +14,13 @@ import reactor.core.publisher.Mono;
 public class LikeService implements ILikeService {
 
     private final LikeRepository likeRepository;
+    private final UserService userService;
 
     @Override
     public Mono<LikeResponseDto> createLike(LikeRequestDto likeRequestDto){
         Like like = LikeAdapter.toEntity(likeRequestDto);
         return likeRepository.save(like)
-                .map(LikeAdapter::toDto)
+                .flatMap(this::enrichLikeWithUserResponseDto)
                 .doOnSuccess(response -> System.out.println("Like created successfully: " + response))
                 .doOnError(error -> System.out.println("Like creation failed: " + error));
     }
@@ -27,9 +28,15 @@ public class LikeService implements ILikeService {
     @Override
     public Mono<LikeResponseDto> getLikeById(String id){
         return likeRepository.findById(id)
-                .map(LikeAdapter::toDto)
+                .flatMap(this::enrichLikeWithUserResponseDto)
                 .switchIfEmpty(Mono.error(new RuntimeException("Like with id : " + id + " doesn't exists")))
                 .doOnSuccess(response -> System.out.println("Like get successfully: " + response))
                 .doOnError(error -> System.out.println("Like get failed: " + error));
+    }
+
+    public Mono<LikeResponseDto> enrichLikeWithUserResponseDto(Like like){
+        return userService.getUserById(like.getCreatedById())
+                .map(userResponseDto ->
+                        LikeAdapter.toDto(like, userResponseDto));
     }
 }

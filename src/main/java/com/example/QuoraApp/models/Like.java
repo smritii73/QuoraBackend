@@ -32,6 +32,9 @@ public class Like {
     @NotNull(message = "The isLike is required")
     private Boolean isLike; //denotes whether liked or disliked
 
+    @NotBlank(message = "The createdById is required")
+    private String createdById;
+
     @CreatedDate
     private LocalDateTime createdAt;
 
