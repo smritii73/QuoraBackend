@@ -47,7 +47,7 @@ polymorphic type
 here, just create the instance of the corresponding strategy and call the same function
 
 generally factory class comprises of all the new instance creation we have to handle. its responsible to create objects
-you donot want new obj creation lying here and there around the code base because if any thing changes in the object creation,
+you donot want new obj creation lying here and there around the code base because if anything changes in the object creation,
 you have to change it everywhere but if yu have consolidated everything in a factory class, you are following the SRP
 & that class is only repsonsible for creating objects of a certain type and if obj creation logic changes,
 you just have to change it once

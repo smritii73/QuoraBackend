@@ -63,6 +63,7 @@ Assumes your function returns a Mono and flattens it */
     @Override
     public Mono<TagResponseDto> getTagById(String id){
         return tagRepository.findById(id)
+                .switchIfEmpty(Mono.error(new RuntimeException("Tag with id " + id + " not found.")))
                 .map(TagAdapter::toDto)
                 .switchIfEmpty(Mono.error(new RuntimeException("Tag with id : " + id + " doesn't exists")))
                 .doOnSuccess(response-> System.out.println("Tag get successfully : " + response))

@@ -2,16 +2,19 @@ package com.example.QuoraApp.adapter;
 
 import com.example.QuoraApp.dto.AnswerRequestDto;
 import com.example.QuoraApp.dto.AnswerResponseDto;
+import com.example.QuoraApp.dto.UserResponseDto;
 import com.example.QuoraApp.models.Answer;
 
 
 public class AnswerAdapter {
 
-    public static AnswerResponseDto toDto(Answer answer){
+    public static AnswerResponseDto toDto(Answer answer, UserResponseDto userResponseDto){
+
         return AnswerResponseDto.builder()
                 .id(answer.getId())
                 .content(answer.getContent())
                 .questionId((answer.getQuestionId()))
+                .createdByUser(userResponseDto)
                 .createdAt(answer.getCreatedAt())
                 .build();
     }

@@ -39,7 +39,7 @@ public class Question {
     @Builder.Default
     private Integer views=0;
 
-    @NotBlank(message="CreatedBy is required.")
+    @NotBlank(message="CreatedById is required.")
     private String createdById;
 
     @CreatedDate

@@ -30,6 +30,7 @@ public class UserService implements IUserService {
     @Override
     public Mono<UserResponseDto> getUserById(String id){
         return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(new RuntimeException("User with id " + id + " not found.")))
                 .map(UserAdapter::toDto)
                 .doOnSuccess(response -> System.out.println("User get successfully : " + response))
                 .doOnError(error -> System.out.println("User get failed : " + error.getMessage()));

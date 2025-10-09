@@ -68,6 +68,7 @@ public class QuestionService implements IQuestionService {
     @Override
     public Mono<QuestionResponseDto> getQuestionById(String id){
         return questionRepository.findById(id)
+                .switchIfEmpty(Mono.error(new RuntimeException("Question with id " + id + " not found.")))
                 .flatMap(this::enrichQuestionWithTagsAndUser)
                 .doOnError(error -> System.out.println("Error getting question by id: " + error))
                 .doOnSuccess(response-> {

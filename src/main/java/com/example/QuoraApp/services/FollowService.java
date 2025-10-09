@@ -44,6 +44,7 @@ public class FollowService implements IFollowService{
     @Override
     public Mono<FollowResponseDto> getFollowById(String id){
         return followRepository.findById(id)
+                .switchIfEmpty(Mono.error(new RuntimeException("Follow with id " + id + " not found.")))
                 .map(FollowAdapter::toDto)
                 .doOnError(error -> System.out.println("Error while follow retrieval : " + error))
                 .doOnSuccess(response -> System.out.println("Follow retrieved sucessfully" + response));

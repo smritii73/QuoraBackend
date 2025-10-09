@@ -35,7 +35,7 @@ public class Answer {
     @Indexed
     private String questionId;
 
-    @NotBlank(message = "CreatedBy is required")
+    @NotBlank(message = "CreatedById is required")
     private String createdById;
 
     @CreatedDate
