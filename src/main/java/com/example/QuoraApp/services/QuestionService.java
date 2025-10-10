@@ -30,20 +30,19 @@ public class QuestionService implements IQuestionService {
     private final TagService tagService;
     private final KafkaEventProducer kafkaEventProducer;
     private final IQuestionIndexService questionIndexService;
-    private final QuestionDocumentRepository questionDocumentRepository;
     private final UserService userService;
 
     @Override
     public Mono<QuestionResponseDto> createQuestion(QuestionRequestDto questionRequestDto) {
         return userService.getUserById(questionRequestDto.getCreatedById())
                 .switchIfEmpty(Mono.error(new RuntimeException("User not found")))
-                .flatMap(user->{
+                .flatMap(userResponseDto->{
                     Question question = QuestionAdapter.toEntity(questionRequestDto);
                     return questionRepository.save(question) //this will give Mono<Question> after saving in questionRepository
                             .flatMap(savedQuestion-> {
                                 if(savedQuestion.getTagIds()== null || savedQuestion.getTagIds().isEmpty()){
                                     return questionIndexService.createQuestionIndex(savedQuestion)
-                                            .thenReturn(QuestionAdapter.toDto(savedQuestion,user));
+                                            .thenReturn(QuestionAdapter.toDto(savedQuestion,userResponseDto));
                                 }
 
                                 Mono<Void> indexMono = questionIndexService.createQuestionIndex(savedQuestion); // save in elastic search
@@ -55,7 +54,7 @@ public class QuestionService implements IQuestionService {
                                         .map(tuple-> QuestionAdapter.toDtoWithTagsAndUser(
                                                 savedQuestion,
                                                 tuple.getT2(),
-                                                user
+                                                userResponseDto
                                         ));
 
                             });
@@ -90,8 +89,8 @@ public class QuestionService implements IQuestionService {
     @Override
     public Mono<Void> deleteQuestionById(String id){
         return this.questionRepository.findById(id)
-                .flatMap(question-> questionDocumentRepository
-                        .deleteById(question.getId())
+                .flatMap(question-> questionIndexService
+                        .deleteQuestionById(question.getId())
                         .thenReturn(question))
                 .flatMap(foundQuestion -> {
                     if(foundQuestion.getTagIds()== null || foundQuestion.getTagIds().isEmpty()){
@@ -235,20 +234,20 @@ public class QuestionService implements IQuestionService {
 
     @Override
     public Flux<QuestionElasticDocument> searchQuestionByElasticSearch(String query){
-        return questionDocumentRepository.findByTitleContainingOrContentContaining(query, query)
+        /*return questionDocumentRepository.findByTitleContainingOrContentContaining(query, query)
                 .doOnNext(response-> System.out.println("Question found: " + response))
                 .doOnComplete(() -> System.out.println("All questions retrieved successfully"))
-                .doOnError(error -> System.out.println("Error getting questions: " + error));
+                .doOnError(error -> System.out.println("Error getting questions: " + error)); */
+        return questionIndexService.searchQuestionByElasticSearch(query);
     }
 
     @Override
     public Mono<Void> syncElasticSearchData(){
-        return questionDocumentRepository.deleteAll()
+        return questionIndexService.deleteAllQuestions()
                 .thenMany(questionRepository.findAll())
                 .flatMap(questionIndexService::createQuestionIndex)
                 .then()
                 .doOnSuccess(response-> System.out.println("Question index synced successfully"))
                 .doOnError(error->System.err.println("Error while syncing indexes : " + error.getMessage()));
-
     }
 }
